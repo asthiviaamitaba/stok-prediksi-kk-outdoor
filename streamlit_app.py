@@ -4,7 +4,7 @@ import pandas as pd
 # ------------------------
 # LOAD & SIAPKAN DATA
 # ------------------------
-data_url = "simpan_dataset_stok_alat_sewa - simpan_dataset_stok_alat_sewa (1).csv"
+data_url = "simpan_dataset_stok_alat_sewa (1).csv"
 df = pd.read_csv(data_url)
 df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors='coerce')
 df["Bulan"] = df["Tanggal"].dt.month
