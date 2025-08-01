@@ -10,7 +10,7 @@ le_toko = joblib.load('le_toko.pkl')
 le_kat = joblib.load('le_kat.pkl')
 
 # Sidebar Input
-st.title("Prediksi Stok Barang")
+st.title("🏕️ Prediksi Stok Barang")
 
 nama_barang = st.selectbox("Pilih Nama Barang", le_barang.classes_)
 toko = st.selectbox("Pilih Toko/Pelanggan", le_toko.classes_)
