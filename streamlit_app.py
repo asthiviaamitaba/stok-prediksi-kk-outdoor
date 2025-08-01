@@ -1,34 +1,74 @@
 import streamlit as st
-import joblib
-import numpy as np
+import pandas as pd
 
-# Load models dan encoders
-model_reg = joblib.load('decision_tree_model.pkl')
-model_cls = joblib.load('naive_bayes_model.pkl')
-le_barang = joblib.load('le_barang.pkl')
-le_toko = joblib.load('le_toko.pkl')
-le_kat = joblib.load('le_kat.pkl')
+# ------------------------
+# LOAD & SIAPKAN DATA
+# ------------------------
+data_url = "simpan_dataset_stok_alat_sewa - simpan_dataset_stok_alat_sewa (1).csv"
+df = pd.read_csv(data_url)
+df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors='coerce')
+df["Bulan"] = df["Tanggal"].dt.month
 
-# Sidebar Input
-st.title("🏕️ Prediksi Stok Barang")
+# Pisahkan nama barang dan normalkan ke baris terpisah
+df = df.dropna(subset=["Nama Barang"])
+df["Nama Barang"] = df["Nama Barang"].str.split(",")
+df = df.explode("Nama Barang")
+df["Nama Barang"] = df["Nama Barang"].str.strip()
 
-nama_barang = st.selectbox("Pilih Nama Barang", le_barang.classes_)
-toko = st.selectbox("Pilih Toko/Pelanggan", le_toko.classes_)
-bulan = st.selectbox("Pilih Bulan", list(range(1, 13)))
+# Harga sewa per item (dari gambar harga sewa)
+harga_sewa = {
+    "Tenda": 50000,
+    "Matras": 25000,
+    "Kompor": 20000,
+    "Lampu": 10000,
+    "Kursi": 20000,
+    "Gas Rent": 20000,
+    "Gas Tukar": 22000,
+    "Sarung Tangan": 15000,
+    "Sleeping Bag": 30000,
+    "Carrier": 60000,
+    "Jaket": 25000,
+    "Flysheet": 20000,
+    "Headlamp": 10000,
+    "Nest": 15000,
+    "Tali": 5000,
+    "Panci": 15000,
+    "Trekking Pole": 25000,
+    "Kompor Portable": 20000,
+    "Cover Bag": 10000,
+    "Trash Bag": 5000
+}
 
-# Transform input
-barang_encoded = le_barang.transform([nama_barang])[0]
-toko_encoded = le_toko.transform([toko])[0]
+# Estimasi pemasukan
+df["Harga Sewa"] = df["Nama Barang"].map(harga_sewa)
+df["Estimasi Pemasukan"] = df["Jumlah"] * df["Harga Sewa"]
 
-input_array = np.array([[barang_encoded, toko_encoded, bulan]])
+# Agregasi data per bulan dan barang
+agg_df = df.groupby(["Bulan", "Nama Barang"], as_index=False).agg({
+    "Jumlah": "sum",
+    "Estimasi Pemasukan": "sum"
+})
+agg_df.rename(columns={"Jumlah": "Total Disewa"}, inplace=True)
 
-# Prediksi regresi
-prediksi_jumlah = model_reg.predict(input_array)[0]
+# ------------------------
+# STREAMLIT APP
+# ------------------------
+st.title("📦 Prediksi Barang Paling Diminati")
+st.write("Tentukan bulan untuk melihat barang yang paling banyak diminati serta estimasi pemasukan.")
 
-# Prediksi klasifikasi
-prediksi_kategori = le_kat.inverse_transform(model_cls.predict(input_array))[0]
+bulan = st.selectbox("Pilih Bulan", sorted(agg_df["Bulan"].unique()))
 
-# Output
-st.subheader("Hasil Prediksi")
-st.write(f"Prediksi jumlah stok: **{int(prediksi_jumlah)}**")
-st.write(f"Kategori kebutuhan: **{prediksi_kategori}**")
+top_n = 3
+filtered = agg_df[agg_df["Bulan"] == bulan]
+top_items = filtered.sort_values(by="Total Disewa", ascending=False).head(top_n)
+
+st.subheader(f"Top {top_n} Barang Paling Diminati Bulan {bulan}")
+
+for i, row in top_items.iterrows():
+    st.markdown(f"**{int(i+1)}. {row['Nama Barang']}**")
+    st.write(f"Jumlah Disewa: {int(row['Total Disewa'])}")
+    st.write(f"Estimasi Pemasukan: Rp {int(row['Estimasi Pemasukan']):,}")
+    st.markdown("---")
+
+if top_items.empty:
+    st.warning("Belum ada data untuk bulan ini.")
