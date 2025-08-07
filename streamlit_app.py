@@ -70,3 +70,17 @@ st.download_button(
     file_name='prediksi_stok.csv',
     mime='text/csv'
 )
+# ==== Fitur: Top 10 Barang Paling Sering Dipinjam ====
+st.subheader("🏆 Top 10 Barang Paling Sering Dipinjam")
+
+top_barang = (
+    df['Nama_Barang']
+    .value_counts()
+    .head(10)
+    .reset_index()
+    .rename(columns={'index': 'Nama Barang', 'Nama_Barang': 'Jumlah Peminjaman'})
+)
+
+st.dataframe(top_barang)
+
+st.bar_chart(top_barang.set_index('Nama Barang'))
