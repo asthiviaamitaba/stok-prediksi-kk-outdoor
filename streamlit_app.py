@@ -4,7 +4,8 @@ import joblib
 from datetime import datetime
 
 st.set_page_config(page_title="Sistem Prediksi Stok", layout="wide")
-
+fig.update_layout(width=1200, height=400)
+# ==== CSS Styling ====
 st.markdown("""
     <style>
     .main {
@@ -64,9 +65,11 @@ top_barang = df['Nama_Barang'].value_counts().reset_index()
 top_barang.columns = ['Nama Barang', 'Jumlah Peminjaman']
 
 col1, col2 = st.columns([1, 2])
+
 with col1:
     st.write("Berikut daftar 10 barang yang paling sering dipinjam berdasarkan data historis.")
     st.dataframe(top_barang.head(10))
+
 with col2:
     st.bar_chart(top_barang.head(10).set_index('Nama Barang'))
 
