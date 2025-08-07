@@ -23,6 +23,7 @@ le_barang = joblib.load('le_barang.pkl')
 
 # ==== UI Header ====
 st.title("📦 Sistem Prediksi Kebutuhan Stok - Kula Outdoor")
+st.markdown("###") 
 st.write("Prediksi jumlah barang yang perlu disiapkan berdasarkan data historis peminjaman.")
 
 # ==== Upload File CSV ====
