@@ -49,4 +49,40 @@ top_barang = df['Nama_Barang'].value_counts().reset_index()
 top_barang.columns = ['Nama Barang', 'Jumlah Peminjaman']
 
 col1, col2 = st.columns([1, 2])
-with col1
+with col1:
+    st.write("Berikut daftar 10 barang yang paling sering dipinjam berdasarkan data historis.")
+    st.dataframe(top_barang.head(10))
+with col2:
+    st.bar_chart(top_barang.head(10).set_index('Nama Barang'))
+
+# ================================
+# === FITUR UTAMA: PREDIKSI STOK
+# ================================
+st.subheader("📆 Pilih Periode Prediksi")
+bulan = st.selectbox("Bulan", list(range(1, 13)))
+barang_unik = sorted(df['Nama_Barang'].unique())
+
+st.subheader("📊 Hasil Prediksi Jumlah Barang")
+prediksi_data = pd.DataFrame({
+    'Nama_Barang': barang_unik,
+    'Barang_Encoded': le_barang.transform(barang_unik),
+    'Bulan': bulan
+})
+X_pred = prediksi_data[['Barang_Encoded', 'Bulan']]
+prediksi_data['Jumlah Diprediksi'] = model.predict(X_pred).round()
+
+# Tampilkan Tabel
+st.dataframe(prediksi_data[['Nama_Barang', 'Jumlah Diprediksi']].rename(columns={
+    'Nama_Barang': 'Nama Barang'
+}))
+
+# Chart
+st.bar_chart(prediksi_data.set_index('Nama_Barang')['Jumlah Diprediksi'])
+
+# Tombol Download
+st.download_button(
+    label="💾 Download Rekomendasi Stok (CSV)",
+    data=prediksi_data.to_csv(index=False).encode('utf-8'),
+    file_name='prediksi_stok.csv',
+    mime='text/csv'
+)
