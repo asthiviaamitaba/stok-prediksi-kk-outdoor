@@ -1,86 +1,72 @@
-
 import streamlit as st
 import pandas as pd
 import joblib
-import io
+from datetime import datetime
 
-# Set title and description
-st.set_page_config(page_title="Prediksi Kebutuhan Stok - KK Outdoor", layout="wide")
-st.title("📦 Prediksi Kebutuhan Stok - KK Outdoor")
-st.markdown("Aplikasi ini memprediksi jumlah kebutuhan stok barang mingguan/bulanan berdasarkan data peminjaman sebelumnya menggunakan model Machine Learning (Decision Tree dan Naive Bayes).")
+# ==== Load Model ====
+model = joblib.load('decision_tree_model.pkl')
+le_barang = joblib.load('le_barang.pkl')
 
-# Upload data file
-uploaded_file = st.file_uploader("Unggah file CSV dataset peminjaman", type=["csv"])
+# ==== UI Header ====
+st.title("📦 Sistem Prediksi Kebutuhan Stok - Kula Outdoor")
+st.write("Prediksi jumlah barang yang perlu disiapkan berdasarkan data historis peminjaman.")
 
-if uploaded_file:
+# ==== Upload File CSV ====
+uploaded_file = st.file_uploader("📁 Upload dataset stok (.csv)", type="csv")
+if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
-
-    # Validasi kolom
-    expected_columns = ['Tanggal', 'Nama Barang', 'Jumlah']
-    missing_cols = [col for col in expected_columns if col not in df.columns]
-    if missing_cols:
-        st.error(f"Dataset kamu kekurangan kolom: {missing_cols}")
-        st.stop()
-
-    # Preview
-    st.subheader("📄 Preview Dataset")
-    st.dataframe(df.head())
-
-    # Preprocessing
-    df['Tanggal'] = pd.to_datetime(df['Tanggal'], errors='coerce')
-    df.dropna(subset=['Tanggal'], inplace=True)
-    df['Bulan'] = df['Tanggal'].dt.month
-
-    # Load label encoder
-    le_barang = joblib.load("le_barang.pkl")
-    df['Nama Barang'] = df['Nama Barang'].astype(str).str.lower().str.strip()
-    df['Barang_Encoded'] = le_barang.transform(df['Nama Barang'])
-
-    # Pilih bulan untuk prediksi
-    selected_month = st.selectbox("Pilih Bulan untuk Prediksi", sorted(df['Bulan'].unique()))
-    bulan_data = df[df['Bulan'] == selected_month]
-
-    if bulan_data.empty:
-        st.warning("Tidak ada data untuk bulan yang dipilih.")
-        st.stop()
-
-    # Pilih model
-    model_choice = st.radio("Pilih Model Prediksi", ["Decision Tree", "Naive Bayes"])
-    if model_choice == "Decision Tree":
-        model = joblib.load("decision_tree_model.pkl")
-    else:
-        model = joblib.load("naive_bayes_model.pkl")
-
-    # Prediksi
-    barang_grouped = bulan_data.groupby('Nama Barang').agg({'Jumlah': 'sum'}).reset_index()
-    barang_grouped['Barang_Encoded'] = le_barang.transform(barang_grouped['Nama Barang'])
-    barang_grouped['Bulan'] = selected_month
-    X_pred = barang_grouped[['Barang_Encoded', 'Bulan']]
-    y_pred = model.predict(X_pred)
-
-    prediksi_data = barang_grouped.copy()
-    prediksi_data['Jumlah Diprediksi'] = y_pred
-
-    # Tabs UI
-    tab1, tab2 = st.tabs(["📊 Hasil Prediksi", "📈 Visualisasi"])
-
-    with tab1:
-        st.subheader("📊 Tabel Prediksi Kebutuhan Stok")
-        st.dataframe(prediksi_data[['Nama Barang', 'Jumlah Diprediksi']])
-
-        # Download hasil prediksi
-        csv = prediksi_data[['Nama Barang', 'Jumlah Diprediksi']].to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Unduh Hasil Prediksi (CSV)", data=csv, file_name="prediksi_stok.csv", mime="text/csv")
-
-    with tab2:
-        st.subheader("📈 Visualisasi Jumlah Diprediksi")
-        st.bar_chart(prediksi_data.set_index('Nama Barang')['Jumlah Diprediksi'])
-
-    with st.expander("ℹ️ Tentang Model"):
-        st.markdown("""
-        - Model ini dibuat berdasarkan histori peminjaman alat di KK Outdoor.
-        - Data dianalisis untuk melihat tren kebutuhan barang tiap bulan.
-        - Model yang digunakan: **Decision Tree** dan **Naive Bayes**.
-        """)
 else:
-    st.info("Silakan unggah file dataset untuk memulai prediksi.")
+    st.warning("⚠️ Gunakan file bawaan karena belum ada file yang diupload.")
+    st.stop()
+
+# ==== Preprocessing ====
+df['Tanggal'] = pd.to_datetime(df['Tanggal'], errors='coerce')
+df = df[df['Jumlah'].notnull()].copy()
+df = df[df['Tanggal'].notnull()]
+
+# Pisahkan nama barang yang digabung dengan koma
+df['Nama_Barang'] = df['Nama Barang'].str.lower().str.strip()
+df['Nama_Barang'] = df['Nama_Barang'].str.split(', ')
+df = df.explode('Nama_Barang').reset_index(drop=True)
+
+# Hapus spasi tambahan jika ada
+df['Nama_Barang'] = df['Nama_Barang'].str.strip()
+
+# Filter hanya barang yang dikenali encoder
+barang_terdaftar = set(le_barang.classes_)
+df = df[df['Nama_Barang'].isin(barang_terdaftar)]
+
+# Tambah kolom Bulan & encoding barang
+df['Bulan'] = df['Tanggal'].dt.month
+df['Barang_Encoded'] = le_barang.transform(df['Nama_Barang'])
+
+# ==== Pilih Periode Prediksi ====
+st.subheader("📆 Pilih Periode Prediksi")
+bulan = st.selectbox("Bulan", list(range(1, 13)))
+barang_unik = sorted(df['Nama_Barang'].unique())
+
+# ==== Prediksi Jumlah per Barang ====
+st.subheader("📊 Hasil Prediksi Jumlah Barang")
+prediksi_data = pd.DataFrame({
+    'Nama_Barang': barang_unik,
+    'Barang_Encoded': le_barang.transform(barang_unik),
+    'Bulan': bulan
+})
+X_pred = prediksi_data[['Barang_Encoded', 'Bulan']]
+prediksi_data['Jumlah Diprediksi'] = model.predict(X_pred).round()
+
+# ==== Tampilkan Tabel ====
+st.dataframe(prediksi_data[['Nama_Barang', 'Jumlah Diprediksi']].rename(columns={
+    'Nama_Barang': 'Nama Barang'
+}))
+
+# ==== Chart ====
+st.bar_chart(prediksi_data.set_index('Nama_Barang')['Jumlah Diprediksi'])
+
+# ==== Download CSV ====
+st.download_button(
+    label="💾 Download Rekomendasi Stok (CSV)",
+    data=prediksi_data.to_csv(index=False).encode('utf-8'),
+    file_name='prediksi_stok.csv',
+    mime='text/csv'
+)
