@@ -5,6 +5,18 @@ from datetime import datetime
 
 st.set_page_config(page_title="Sistem Prediksi Stok", layout="wide")
 
+st.markdown("""
+    <style>
+    .main {
+        background-color: #f9f9f9;
+        padding: 20px;
+    }
+    .block-container {
+        padding: 2rem 2rem 2rem 2rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # ==== Load Model ====
 model = joblib.load('decision_tree_model.pkl')
 le_barang = joblib.load('le_barang.pkl')
