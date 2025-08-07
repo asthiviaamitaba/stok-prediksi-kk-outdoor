@@ -4,8 +4,7 @@ import joblib
 from datetime import datetime
 
 st.set_page_config(page_title="Sistem Prediksi Stok", layout="wide")
-fig.update_layout(width=1200, height=400)
-# ==== CSS Styling ====
+
 st.markdown("""
     <style>
     .main {
