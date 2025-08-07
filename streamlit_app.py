@@ -3,6 +3,8 @@ import pandas as pd
 import joblib
 from datetime import datetime
 
+st.set_page_config(page_title="Sistem Prediksi Stok", layout="wide")
+
 # ==== Load Model ====
 model = joblib.load('decision_tree_model.pkl')
 le_barang = joblib.load('le_barang.pkl')
