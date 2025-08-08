@@ -22,16 +22,16 @@ model = joblib.load('decision_tree_model.pkl')
 le_barang = joblib.load('le_barang.pkl')
 
 # ==== UI Header ====
-st.title("📦 Sistem Prediksi Kebutuhan Stok - Kula Outdoor")
+st.title("📦 Sistem Prediksi Kebutuhan Stok - 🏕️ Kula Outdoor")
 st.write("") 
-st.write("Prediksi jumlah barang yang perlu disiapkan berdasarkan data historis peminjaman.")
+st.write("Prediksi jumlah barang yang perlu disiapkan untuk bulan atau tahun selanjutnya berdasarkan data historis peminjaman.")
 
 # ==== Upload File CSV ====
 uploaded_file = st.file_uploader("📁 Upload dataset stok (.csv)", type="csv")
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
 else:
-    st.warning("⚠️ Gunakan file bawaan karena belum ada file yang diupload.")
+    st.warning("⚠️ Gunakan file yang sudah di scrapping agar file dapat diupload, karena belum dapat mengambil file excel yang mitra punya.")
     st.stop()
 
 # ==== Preprocessing ====
