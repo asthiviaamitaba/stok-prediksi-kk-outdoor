@@ -39,7 +39,7 @@ df['Tanggal'] = pd.to_datetime(df['Tanggal'], errors='coerce')
 df = df[df['Jumlah'].notnull()].copy()
 df = df[df['Tanggal'].notnull()]
 
-# Pisahkan nama barang yang digabung dengan koma
+# Memisahkan nama barang yang digabung dengan koma
 df['Nama_Barang'] = df['Nama Barang'].str.lower().str.strip()
 df['Nama_Barang'] = df['Nama_Barang'].str.split(', ')
 df = df.explode('Nama_Barang').reset_index(drop=True)
