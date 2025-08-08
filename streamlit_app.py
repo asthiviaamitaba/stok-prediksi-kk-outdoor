@@ -44,7 +44,7 @@ df['Nama_Barang'] = df['Nama Barang'].str.lower().str.strip()
 df['Nama_Barang'] = df['Nama_Barang'].str.split(', ')
 df = df.explode('Nama_Barang').reset_index(drop=True)
 
-# Hapus spasi tambahan jika ada
+# Hapus spasi tambahan 
 df['Nama_Barang'] = df['Nama_Barang'].str.strip()
 
 # Filter hanya barang yang dikenali encoder
